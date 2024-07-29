@@ -1,0 +1,44 @@
+{
+  "name": "triangle/router",
+  "description": "Triangle Router Component",
+  "type": "library",
+  "keywords": [
+    "router",
+    "Triangle",
+    "localzet"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "authors": [
+    {
+      "role": "Developer",
+      "name": "Nikita Popov",
+      "email": "nikic@php.net",
+      "homepage": "https://github.com/nikic"
+    },
+    {
+      "role": "Developer",
+      "name": "Ivan Zorin",
+      "email": "creator@localzet.com",
+      "homepage": "https://github.com/localzet"
+    }
+  ],
+  "support": {
+    "email": "support@localzet.com",
+    "source": "https://github.com/Triangle-org/Router"
+  },
+  "autoload": {
+    "psr-4": {
+      "Triangle\\": "",
+      "Triangle\\Router\\": "src/"
+    },
+    "files": [
+      "src/functions.php"
+    ]
+  },
+  "require": {
+    "php": ">=8.0"
+  },
+  "require-dev": {
+    "triangle/engine": "^6.2"
+  }
+}
