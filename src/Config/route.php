@@ -2,6 +2,6 @@
 
 use Triangle\Router;
 
-Router::any('/', function (support\Request $request) {
-    // Пример использования роутера
+Router::any('/hello/{name}', function (support\Request $request, string $name) {
+    return response("Привет, $name!");
 });
