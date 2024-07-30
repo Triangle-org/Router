@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 
 /**
  * @package     Triangle Router Component
@@ -37,20 +37,56 @@ class Router
 
     protected static ?Router\Dispatcher $dispatcher = null;
 
+    protected static ?Router $instance = null;
+
     protected static array $disableDefaultRoute = [];
 
     protected static array $nameList = [];
 
     protected static array $fallback = [];
 
+    protected static string $groupPrefix = '';
+
+    protected array $routes = [];
+
+    protected array $children = [];
+
     public static function route(array|string $methods, string $path, mixed $callback): RouteObject
     {
-        return static::$collector->addRoute($methods, $path, $callback);
+        $object = static::$collector->addRoute($methods, $path, $callback);
+        static::$instance?->addRoute($object);
+        return $object;
     }
 
-    public static function group(string $path, callable $callback = null): void
+    public static function group(string $path, callable $callback = null): static
     {
+        $previousGroupPrefix = static::$groupPrefix;
+        static::$groupPrefix = $previousGroupPrefix . $path;
+        $previousInstance = static::$instance;
+        $instance = static::$instance = new static;
         static::$collector->addGroup($path, $callback);
+        static::$groupPrefix = $previousGroupPrefix;
+        static::$instance = $previousInstance;
+        $previousInstance?->addChild($instance);
+        return $instance;
+    }
+
+    /**
+     * @param Router $route
+     * @return void
+     */
+    public function addChild(Router $route): void
+    {
+        $this->children[] = $route;
+    }
+
+    /**
+     * Собрать маршрут
+     * @param RouteObject $route Объект маршрута
+     */
+    public function addRoute(RouteObject $route): void
+    {
+        $this->routes[] = $route;
     }
 
     /**
@@ -275,5 +311,20 @@ class Router
         static::$dispatcher = new Router\Dispatcher\GroupCountBased(
             static::$collector->getRoutes()
         );
+    }
+
+    /**
+     * @param $middleware
+     * @return $this
+     */
+    public function middleware($middleware): Router
+    {
+        foreach ($this->routes as $route) {
+            $route->middleware($middleware);
+        }
+        foreach ($this->children as $child) {
+            $child->middleware($middleware);
+        }
+        return $this;
     }
 }
