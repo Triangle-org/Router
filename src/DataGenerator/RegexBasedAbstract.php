@@ -76,7 +76,7 @@ abstract class RegexBasedAbstract implements DataGenerator
     }
 
     /**
-     * @return mixed[][]
+     * @return RouteObject[]
      */
     public function getRoutes(): array
     {
