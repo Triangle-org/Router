@@ -40,7 +40,7 @@ namespace Triangle\Router {
           ?'routeCollector' => classname<RouteCollector>,
         ) $options = shape()): Dispatcher;
 
-    function cachedDispatcher(
+    function cachedRouteDispatcher(
         (function(RouteCollector): void) $routeDefinitionCallback,
         shape(
           ?'routeParser' => classname<RouteParser>,
