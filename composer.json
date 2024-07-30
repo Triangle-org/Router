@@ -33,6 +33,6 @@
     "php": ">=8.0"
   },
   "require-dev": {
-    "triangle/engine": "^6.2"
+    "triangle/engine": ">=6.3"
   }
 }

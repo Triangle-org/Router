@@ -3,20 +3,20 @@
 </a></p>
 
 <p align="center">
-  <a href="https://packagist.org/packages/triangle/console">
-  <img src="https://img.shields.io/packagist/dt/triangle/console?label=%D0%A1%D0%BA%D0%B0%D1%87%D0%B8%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F" alt="Скачивания">
+  <a href="https://packagist.org/packages/triangle/router">
+  <img src="https://img.shields.io/packagist/dt/triangle/router?label=%D0%A1%D0%BA%D0%B0%D1%87%D0%B8%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F" alt="Скачивания">
 </a>
-  <a href="https://github.com/Triangle-org/Console">
-  <img src="https://img.shields.io/github/commit-activity/t/Triangle-org/Console?label=%D0%9A%D0%BE%D0%BC%D0%BC%D0%B8%D1%82%D1%8B" alt="Коммиты">
+  <a href="https://github.com/Triangle-org/Router">
+  <img src="https://img.shields.io/github/commit-activity/t/Triangle-org/Router?label=%D0%9A%D0%BE%D0%BC%D0%BC%D0%B8%D1%82%D1%8B" alt="Коммиты">
 </a>
-  <a href="https://packagist.org/packages/triangle/console">
-  <img src="https://img.shields.io/packagist/v/triangle/console?label=%D0%92%D0%B5%D1%80%D1%81%D0%B8%D1%8F" alt="Версия">
+  <a href="https://packagist.org/packages/triangle/router">
+  <img src="https://img.shields.io/packagist/v/triangle/router?label=%D0%92%D0%B5%D1%80%D1%81%D0%B8%D1%8F" alt="Версия">
 </a>
-  <a href="https://packagist.org/packages/triangle/console">
-  <img src="https://img.shields.io/packagist/dependency-v/triangle/console/php?label=PHP" alt="Версия PHP">
+  <a href="https://packagist.org/packages/triangle/router">
+  <img src="https://img.shields.io/packagist/dependency-v/triangle/router/php?label=PHP" alt="Версия PHP">
 </a>
-  <a href="https://github.com/Triangle-org/Console">
-  <img src="https://img.shields.io/github/license/Triangle-org/Console?label=%D0%9B%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F" alt="Лицензия">
+  <a href="https://github.com/Triangle-org/Router">
+  <img src="https://img.shields.io/github/license/Triangle-org/Router?label=%D0%9B%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F" alt="Лицензия">
 </a>
 </p>
 
@@ -47,7 +47,7 @@ Usage
 
 require '/path/to/vendor/autoload.php';
 
-$dispatcher = Triangle\Router\simpleRouteDispatcher(function(Triangle\Router\RouteCollector $r) {
+$dispatcher = simpleRouteDispatcher(function(Triangle\Router\RouteCollector $r) {
     $r->addRoute('GET', '/users', 'get_all_users_handler');
     // {id} должен быть числом (\d+)
     $r->addRoute('GET', '/user/{id:\d+}', 'get_user_handler');
@@ -84,7 +84,7 @@ switch ($routeInfo[0]) {
 
 ### Определение маршрутов
 
-Маршруты определяются путем вызова функции `Triangle\Router\simpleRouteDispatcher()`, которая принимает
+Маршруты определяются путем вызова функции `simpleRouteDispatcher()`, которая принимает
 вызываемый объект, принимающий экземпляр `Triangle\Router\RouteCollector`. Маршруты добавляются путем вызова
 `addRoute()` на экземпляре коллектора:
 
@@ -198,7 +198,7 @@ $r->addRoute('GET', '/admin/do-something-else', 'handler');
 ```php
 <?php
 
-$dispatcher = Triangle\Router\cachedRouteDispatcher(function(Triangle\Router\RouteCollector $r) {
+$dispatcher = cachedRouteDispatcher(function(Triangle\Router\RouteCollector $r) {
     $r->addRoute('GET', '/user/{name}/{id:[0-9]+}', 'handler0');
     $r->addRoute('GET', '/user/{id:[0-9]+}', 'handler1');
     $r->addRoute('GET', '/user/{name}', 'handler2');
@@ -296,7 +296,7 @@ interface Dispatcher {
 ```php
 <?php
 
-$dispatcher = Triangle\Router\simpleRouteDispatcher(function(Triangle\Router\RouteCollector $r) {
+$dispatcher = simpleRouteDispatcher(function(Triangle\Router\RouteCollector $r) {
     /* ... */
 }, [
     'routeParser' => 'Triangle\\Router\\RouteParser\\Std',

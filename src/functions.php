@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 
 /**
  * @package     Triangle Router Component
@@ -12,37 +12,38 @@
  *              it under the terms of the GNU Affero General Public License as published
  *              by the Free Software Foundation, either version 3 of the License, or
  *              (at your option) any later version.
- *              
+ *
  *              This program is distributed in the hope that it will be useful,
  *              but WITHOUT ANY WARRANTY; without even the implied warranty of
  *              MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *              GNU Affero General Public License for more details.
- *              
+ *
  *              You should have received a copy of the GNU Affero General Public License
  *              along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *              
+ *
  *              For any questions, please contact <triangle@localzet.com>
  */
 
-namespace Triangle\Router;
+use Triangle\Router;
+use Triangle\Router\DataGenerator;
+use Triangle\Router\Dispatcher;
+use Triangle\Router\RouteCollector;
+use Triangle\Router\RouteParser;
 
-use LogicException;
-use RuntimeException;
-
-if (!function_exists('Triangle\Router\simpleRouteDispatcher')) {
+if (!function_exists('simpleRouteDispatcher')) {
     /**
      * @param callable $routeDefinitionCallback
      * @param array $options
      *
      * @return Dispatcher
      */
-    function simpleRouteDispatcher(callable $routeDefinitionCallback, array $options = [])
+    function simpleRouteDispatcher(callable $routeDefinitionCallback, array $options = []): Dispatcher
     {
         $options += [
-            'routeParser' => 'Triangle\\Router\\RouteParser\\Std',
-            'dataGenerator' => 'Triangle\\Router\\DataGenerator\\GroupCountBased',
-            'dispatcher' => 'Triangle\\Router\\Dispatcher\\GroupCountBased',
-            'routeCollector' => 'Triangle\\Router\\RouteCollector',
+            'routeParser' => RouteParser\Std::class,
+            'dataGenerator' => DataGenerator\GroupCountBased::class,
+            'dispatcher' => Dispatcher\GroupCountBased::class,
+            'routeCollector' => RouteCollector::class,
         ];
 
         /** @var RouteCollector $routeCollector */
@@ -53,14 +54,16 @@ if (!function_exists('Triangle\Router\simpleRouteDispatcher')) {
 
         return new $options['dispatcher']($routeCollector->getData());
     }
+}
 
+if (!function_exists('cachedRouteDispatcher')) {
     /**
      * @param callable $routeDefinitionCallback
      * @param array $options
      *
      * @return Dispatcher
      */
-    function cachedRouteDispatcher(callable $routeDefinitionCallback, array $options = [])
+    function cachedRouteDispatcher(callable $routeDefinitionCallback, array $options = []): Dispatcher
     {
         $options += [
             'routeParser' => 'Triangle\\Router\\RouteParser\\Std',
@@ -97,5 +100,30 @@ if (!function_exists('Triangle\Router\simpleRouteDispatcher')) {
         }
 
         return new $options['dispatcher']($dispatchData);
+    }
+}
+
+if (!function_exists('route')) {
+    /**
+     * @param string $name
+     * @param ...$parameters
+     * @return string
+     */
+    function route(string $name, ...$parameters): string
+    {
+        $route = Router::getByName($name);
+        if (!$route) {
+            return '';
+        }
+
+        if (!$parameters) {
+            return $route->url();
+        }
+
+        if (is_array(current($parameters))) {
+            $parameters = current($parameters);
+        }
+
+        return $route->url($parameters);
     }
 }
