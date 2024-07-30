@@ -20,27 +20,27 @@
 </a>
 </p>
 
-Triangle Router - Fast request router for Triangle Web Framework
+Triangle Router - Компонент для HTTP-фреймворка [Triangle Web][triangle_web]
 =======================================
 
-This library provides a fast implementation of a regular expression based router. [Blog post explaining how the
-implementation works and why it is fast.][blog_post]
+Эта библиотека обеспечивает быструю реализацию маршрутизатора на основе регулярных выражений.
+[Статья, о том, как работает реализация и почему она быстрее.][blog_post]
 
-Install
+Установка
 -------
 
-To install with composer:
+Для установки через Composer:
 
 ```sh
 composer require triangle/router
 ```
 
-Requires PHP 5.4 or newer.
+Требуется PHP 8.0 или выше.
 
 Usage
 -----
 
-Here's a basic usage example:
+Пример использования:
 
 ```php
 <?php
@@ -49,17 +49,17 @@ require '/path/to/vendor/autoload.php';
 
 $dispatcher = Triangle\Router\simpleRouteDispatcher(function(Triangle\Router\RouteCollector $r) {
     $r->addRoute('GET', '/users', 'get_all_users_handler');
-    // {id} must be a number (\d+)
+    // {id} должен быть числом (\d+)
     $r->addRoute('GET', '/user/{id:\d+}', 'get_user_handler');
-    // The /{title} suffix is optional
+    // Суффикс /{title} не обязателен
     $r->addRoute('GET', '/articles/{id:\d+}[/{title}]', 'get_article_handler');
 });
 
-// Fetch method and URI from somewhere
+// Получаем метод и URI откуда нужно
 $httpMethod = $_SERVER['REQUEST_METHOD'];
 $uri = $_SERVER['REQUEST_URI'];
 
-// Strip query string (?foo=bar) and decode URI
+// Удалим строку запроса (?foo=bar) и декодируем URI
 if (false !== $pos = strpos($uri, '?')) {
     $uri = substr($uri, 0, $pos);
 }
@@ -68,103 +68,108 @@ $uri = rawurldecode($uri);
 $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
 switch ($routeInfo[0]) {
     case Triangle\Router\Dispatcher::NOT_FOUND:
-        // ... 404 Not Found
+        // ... 404 Ничего не найдено
         break;
     case Triangle\Router\Dispatcher::METHOD_NOT_ALLOWED:
         $allowedMethods = $routeInfo[1];
-        // ... 405 Method Not Allowed
+        // ... 405 Метод не поддерживается
         break;
     case Triangle\Router\Dispatcher::FOUND:
-        $handler = $routeInfo[1];
+        $callback = $routeInfo[1];
         $vars = $routeInfo[2];
-        // ... call $handler with $vars
+        // ... Здесь можно вызвать, например $callback($vars)
         break;
 }
 ```
 
-### Defining routes
+### Определение маршрутов
 
-The routes are defined by calling the `Triangle\Router\simpleRouteDispatcher()` function, which accepts
-a callable taking a `Triangle\Router\RouteCollector` instance. The routes are added by calling
-`addRoute()` on the collector instance:
+Маршруты определяются путем вызова функции `Triangle\Router\simpleRouteDispatcher()`, которая принимает
+вызываемый объект, принимающий экземпляр `Triangle\Router\RouteCollector`. Маршруты добавляются путем вызова
+`addRoute()` на экземпляре коллектора:
 
 ```php
 $r->addRoute($method, $routePattern, $handler);
 ```
 
-The `$method` is an uppercase HTTP method string for which a certain route should match. It
-is possible to specify multiple valid methods using an array:
+Параметр `$method` — это строка HTTP-метода в верхнем регистре, для которой должен совпадать определенный маршрут.
+Можно указать несколько допустимых методов с помощью массива:
 
 ```php
-// These two calls
+// 2 маршрута:
 $r->addRoute('GET', '/test', 'handler');
 $r->addRoute('POST', '/test', 'handler');
-// Are equivalent to this one call
+// Эквивалентны записи:
 $r->addRoute(['GET', 'POST'], '/test', 'handler');
 ```
 
-By default the `$routePattern` uses a syntax where `{foo}` specifies a placeholder with name `foo`
-and matching the regex `[^/]+`. To adjust the pattern the placeholder matches, you can specify
-a custom pattern by writing `{bar:[0-9]+}`. Some examples:
+По умолчанию `$routePattern` использует синтаксис, где `{foo}` указывает заполнитель с именем `foo`
+и соответствует регулярному выражению `[^/]+`. Чтобы настроить шаблон, которому соответствует заполнитель, вы можете указать
+пользовательский шаблон, написав `{bar:[0-9]+}`. Вот несколько примеров:
 
 ```php
-// Matches /user/42, but not /user/xyz
+// Маршрут /user/42 совпадёт, но /user/xyz - уже нет
 $r->addRoute('GET', '/user/{id:\d+}', 'handler');
 
-// Matches /user/foobar, but not /user/foo/bar
+// Маршрут /user/foobar совпадёт, но /user/foo/bar  - уже нет
 $r->addRoute('GET', '/user/{name}', 'handler');
 
-// Matches /user/foo/bar as well
+// Маршрут /user/foo/bar совпадёт
 $r->addRoute('GET', '/user/{name:.+}', 'handler');
 ```
 
-Custom patterns for route placeholders cannot use capturing groups. For example `{lang:(en|de)}`
-is not a valid placeholder, because `()` is a capturing group. Instead you can use either
-`{lang:en|de}` or `{lang:(?:en|de)}`.
+Пользовательские шаблоны для заполнителей маршрутов не могут использовать группы захвата. Например, `{lang:(en|de)}`
+не является допустимым заполнителем, поскольку `()` является группой захвата. Вместо этого вы можете использовать либо `{lang:en|de}`, либо `{lang:(?:en|de)}`.
 
-Furthermore parts of the route enclosed in `[...]` are considered optional, so that `/foo[bar]`
-will match both `/foo` and `/foobar`. Optional parts are only supported in a trailing position,
-not in the middle of a route.
+Кроме того, части маршрута, заключенные в `[...]`, считаются необязательными, поэтому `/foo[bar]`
+будет соответствовать как `/foo`, так и `/foobar`. Необязательные части поддерживаются только в конце,
+но не в середине маршрута.
 
 ```php
-// This route
+// Этот маршрут
 $r->addRoute('GET', '/user/{id:\d+}[/{name}]', 'handler');
-// Is equivalent to these two routes
+// Эквивалентен двум следующим
 $r->addRoute('GET', '/user/{id:\d+}', 'handler');
 $r->addRoute('GET', '/user/{id:\d+}/{name}', 'handler');
 
-// Multiple nested optional parts are possible as well
+// Также возможны множественные вложенные необязательные части
 $r->addRoute('GET', '/user[/{id:\d+}[/{name}]]', 'handler');
 
-// This route is NOT valid, because optional parts can only occur at the end
+// Этот маршрут НЕ действителен, поскольку необязательные части могут встречаться только в конце
 $r->addRoute('GET', '/user[/{id:\d+}]/{name}', 'handler');
 ```
 
-The `$handler` parameter does not necessarily have to be a callback, it could also be a controller
-class name or any other kind of data you wish to associate with the route. Triangle Router only tells you
-which handler corresponds to your URI, how you interpret it is up to you.
+Параметр `$handler` не обязательно должен быть обратным вызовом, он также может быть именем класса контроллера
+или любым другим типом данных, которые вы хотите связать с маршрутом. Маршрутизатор только сообщает вам,
+какой обработчик соответствует вашему URI, как вы его интерпретируете, зависит от вас.
 
-#### Shorcut methods for common request methods
+#### Сокращения для популярных методов
 
-For the `GET`, `POST`, `PUT`, `PATCH`, `DELETE` and `HEAD` request methods shortcut methods are available. For example:
+Для методов `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD` и `OPTIONS` доступны сокращения. Например, маршруты:
 
 ```php
 $r->get('/get-route', 'get_handler');
 $r->post('/post-route', 'post_handler');
 ```
 
-Is equivalent to:
+Эквивалентны:
 
 ```php
 $r->addRoute('GET', '/get-route', 'get_handler');
 $r->addRoute('POST', '/post-route', 'post_handler');
 ```
 
-#### Route Groups
+Если маршрут предполагает все существующие (и не существующие) методы - можно использовать:
 
-Additionally, you can specify routes inside of a group. All routes defined inside a group will have a common prefix.
+```php
+$r->any('/any-route', 'any_handler');
+```
 
-For example, defining your routes as:
+#### Группы маршрутов
+
+Кроме того, вы можете указать маршруты внутри группы. Все маршруты, определенные внутри группы, будут иметь общий префикс.
+
+Например, определение ваших маршрутов как:
 
 ```php
 $r->addGroup('/admin', function (RouteCollector $r) {
@@ -174,7 +179,7 @@ $r->addGroup('/admin', function (RouteCollector $r) {
 });
 ```
 
-Will have the same result as:
+Будет иметь тот же результат, что и:
 
  ```php
 $r->addRoute('GET', '/admin/do-something', 'handler');
@@ -182,58 +187,57 @@ $r->addRoute('GET', '/admin/do-another-thing', 'handler');
 $r->addRoute('GET', '/admin/do-something-else', 'handler');
  ```
 
-Nested groups are also supported, in which case the prefixes of all the nested groups are combined.
+Также поддерживаются вложенные группы, в этом случае префиксы всех вложенных групп объединяются.
 
-### Caching
+### Кэширование
 
-The reason `simpleRouteDispatcher` accepts a callback for defining the routes is to allow seamless
-caching. By using `cachedDispatcher` instead of `simpleRouteDispatcher` you can cache the generated
-routing data and construct the dispatcher from the cached information:
+Причина, по которой `simpleRouteDispatcher` принимает обратный вызов для определения маршрутов, заключается в том, чтобы разрешить бесшовное
+кэширование. Используя `cachedRouteDispatcher` вместо `simpleRouteDispatcher`, вы можете кэшировать сгенерированные
+данные маршрутизации и создать диспетчер из кэшированной информации:
 
 ```php
 <?php
 
-$dispatcher = Triangle\Router\cachedDispatcher(function(Triangle\Router\RouteCollector $r) {
+$dispatcher = Triangle\Router\cachedRouteDispatcher(function(Triangle\Router\RouteCollector $r) {
     $r->addRoute('GET', '/user/{name}/{id:[0-9]+}', 'handler0');
     $r->addRoute('GET', '/user/{id:[0-9]+}', 'handler1');
     $r->addRoute('GET', '/user/{name}', 'handler2');
 }, [
-    'cacheFile' => __DIR__ . '/route.cache', /* required */
-    'cacheDisabled' => IS_DEBUG_ENABLED,     /* optional, enabled by default */
+    'cacheFile' => __DIR__ . '/route.cache', /* обязательно */
+    'cacheDisabled' => IS_DEBUG_ENABLED,     /* необязательно, включено по умолчанию */
 ]);
 ```
 
-The second parameter to the function is an options array, which can be used to specify the cache
-file location, among other things.
+Вторым параметром функции является массив параметров, который можно использовать, среди прочего, для указания местоположения файла кэша.
 
-### Dispatching a URI
+### Обработка URI
 
-A URI is dispatched by calling the `dispatch()` method of the created dispatcher. This method
-accepts the HTTP method and a URI. Getting those two bits of information (and normalizing them
-appropriately) is your job - this library is not bound to the PHP web SAPIs.
+URI обрабатывается путем вызова метода `dispatch()` созданного диспетчера. Этот метод
+принимает метод HTTP и URI. Получение этих двух битов информации (и их нормализация
+соответствующим образом) — ваша работа — эта библиотека не привязана к SAPI PHP.
 
-The `dispatch()` method returns an array whose first element contains a status code. It is one
-of `Dispatcher::NOT_FOUND`, `Dispatcher::METHOD_NOT_ALLOWED` and `Dispatcher::FOUND`. For the
-method not allowed status the second array element contains a list of HTTP methods allowed for
-the supplied URI. For example:
+Метод `dispatch()` возвращает массив, первый элемент которого содержит код состояния. Это один из
+`Dispatcher::NOT_FOUND`, `Dispatcher::METHOD_NOT_ALLOWED` и `Dispatcher::FOUND`. Для
+состояния «метод не разрешен» второй элемент массива содержит список методов HTTP, разрешенных для
+предоставленного URI. Например:
 
     [Triangle\Router\Dispatcher::METHOD_NOT_ALLOWED, ['GET', 'POST']]
 
-> **NOTE:** The HTTP specification requires that a `405 Method Not Allowed` response include the
-`Allow:` header to detail available methods for the requested resource. Applications using Triangle Router
-should use the second array element to add this header when relaying a 405 response.
+> **ПРИМЕЧАНИЕ:** Спецификация HTTP требует, чтобы ответ `405 Method Not Allowed` включал заголовок `Allow:`
+для детализации доступных методов для запрошенного ресурса. Приложения, использующие Triangle Router,
+должны использовать второй элемент массива для добавления этого заголовка при ретрансляции ответа 405.
 
-For the found status the second array element is the handler that was associated with the route
-and the third array element is a dictionary of placeholder names to their values. For example:
+Для статуса `Dispatcher::FOUND` второй элемент массива — это обработчик, который был связан с маршрутом,
+а третий элемент массива — это словарь имен переменных для их значений. Например:
 
-    /* Routing against GET /user/localzet/42 */
+    /* Маршрутизация по GET /user/localzet/42 */
 
     [Triangle\Router\Dispatcher::FOUND, 'handler0', ['name' => 'localzet', 'id' => '42']]
 
-### Overriding the route parser and dispatcher
+### Переопределение парсера маршрута и диспетчера
 
-The routing process makes use of three components: A route parser, a data generator and a
-dispatcher. The three components adhere to the following interfaces:
+Процесс маршрутизации использует три компонента: парсер маршрута, генератор данных и
+диспетчер. Три компонента придерживаются следующих интерфейсов:
 
 ```php
 <?php
@@ -256,10 +260,10 @@ interface Dispatcher {
 }
 ```
 
-The route parser takes a route pattern string and converts it into an array of route infos, where
-each route info is again an array of it's parts. The structure is best understood using an example:
+Парсер маршрута берет строку шаблона маршрута и преобразует ее в массив информаций о маршруте, где
+каждая информация снова является массивом своих частей. Структуру лучше всего понять на примере:
 
-    /* The route /user/{id:\d+}[/{name}] converts to the following array: */
+    /* Маршрут /user/{id:\d+}[/{name}] преобразуется в следующий массив: */
     [
         [
             '/user/',
@@ -273,22 +277,21 @@ each route info is again an array of it's parts. The structure is best understoo
         ],
     ]
 
-This array can then be passed to the `addRoute()` method of a data generator. After all routes have
-been added the `getData()` of the generator is invoked, which returns all the routing data required
-by the dispatcher. The format of this data is not further specified - it is tightly coupled to
-the corresponding dispatcher.
+Этот массив затем можно передать в метод `addRoute()` генератора данных. После добавления всех маршрутов
+вызывается `getData()` генератора, который возвращает все данные маршрутизации, необходимые
+диспетчеру. Формат этих данных далее не указывается — он тесно связан с
+соответствующим диспетчером.
 
-The dispatcher accepts the routing data via a constructor and provides a `dispatch()` method, which
-you're already familiar with.
+Диспетчер принимает данные маршрутизации через конструктор и предоставляет метод `dispatch()`, с которым
+вы уже знакомы.
 
-The route parser can be overwritten individually (to make use of some different pattern syntax),
-however the data generator and dispatcher should always be changed as a pair, as the output from
-the former is tightly coupled to the input of the latter. The reason the generator and the
-dispatcher are separate is that only the latter is needed when using caching (as the output of
-the former is what is being cached.)
+Парсер маршрута можно переопределить по отдельности (чтобы использовать другой синтаксис шаблона),
+однако генератор данных и диспетчер всегда следует изменять как пару, поскольку вывод первого тесно связан со вводом
+второго. Причина, по которой генератор и диспетчер разделены, заключается в том, что только последний
+нужен при использовании кэширования (поскольку вывод первого — это то, что кэшируется.)
 
-When using the `simpleRouteDispatcher` / `cachedDispatcher` functions from above the override happens
-through the options array:
+При использовании функций `simpleRouteDispatcher` / `cachedRouteDispatcher` из вышеприведенных
+переопределение происходит через массив параметров:
 
 ```php
 <?php
@@ -302,34 +305,32 @@ $dispatcher = Triangle\Router\simpleRouteDispatcher(function(Triangle\Router\Rou
 ]);
 ```
 
-The above options array corresponds to the defaults. By replacing `GroupCountBased` by
-`GroupPosBased` you could switch to a different dispatching strategy.
+Массив параметров выше соответствует значениям по умолчанию. Заменив `GroupCountBased` на
+`GroupPosBased`, вы можете переключиться на другую стратегию диспетчеризации.
 
-### A Note on HEAD Requests
+### Примечание о запросах HEAD
 
-The HTTP spec requires servers to [support both GET and HEAD methods][2616-511]:
+Спецификация HTTP требует, чтобы серверы [поддерживали как методы GET, так и методы HEAD][2616-511]:
 
-> The methods GET and HEAD MUST be supported by all general-purpose servers
+> Методы GET и HEAD ДОЛЖНЫ поддерживаться всеми серверами общего назначения
 
-To avoid forcing users to manually register HEAD routes for each resource we fallback to matching an
-available GET route for a given resource. The PHP web SAPI transparently removes the entity body
-from HEAD responses so this behavior has no effect on the vast majority of users.
+Чтобы не заставлять пользователей вручную регистрировать маршруты HEAD для каждого ресурса, мы возвращаемся к сопоставлению
+доступного маршрута GET для данного ресурса. PHP SAPI прозрачно удаляет тело сущности
+из ответов HEAD, поэтому это поведение не влияет на подавляющее большинство пользователей.
 
-However, implementers using Triangle Router outside the web SAPI environment (e.g. a custom server) MUST
-NOT send entity bodies generated in response to HEAD requests. If you are a non-SAPI user this is
-*your responsibility*; Triangle Router has no purview to prevent you from breaking HTTP in such cases.
+Однако разработчики, использующие Triangle Router вне веб-среды SAPI (например, пользовательский сервер),
+НЕ ДОЛЖНЫ отправлять тела сущностей, сгенерированные в ответ на запросы HEAD. Если вы не являетесь пользователем SAPI, это
+*ваша ответственность*; Triangle Router не имеет полномочий, чтобы помешать вам нарушить HTTP в таких случаях.
 
-Finally, note that applications MAY always specify their own HEAD method route for a given
-resource to bypass this behavior entirely.
+Наконец, обратите внимание, что приложения МОГУТ всегда указывать свой собственный маршрут метода HEAD для данного ресурса,
+чтобы полностью обойти это поведение.
 
-### Credits
+### Авторы
 
-This library is based on a router that [Levi Morrison][levi] implemented for the Aerys server.
-
-A large number of tests, as well as HTTP compliance considerations, were provided by [Daniel Lowrey][rdlowrey].
-
+Эта библиотека основана на маршрутизаторах, реализованных [Levi Morrison][levi] и [Nikita Popov][nikic].
 
 [2616-511]: http://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html#sec5.1.1 "RFC 2616 Section 5.1.1"
+[triangle_web]: https://github.com/Triangle-org/Web
 [blog_post]: http://nikic.github.io/2014/02/18/Fast-request-routing-using-regular-expressions.html
 [levi]: https://github.com/morrisonlevi
-[rdlowrey]: https://github.com/rdlowrey
+[nikic]: https://github.com/nikic
