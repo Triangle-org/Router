@@ -265,7 +265,7 @@ class Router
         }
 
         static::$dispatcher = new Router\Dispatcher\GroupCountBased(
-            static::$collector->getRoutes()
+            static::$collector->getData()
         );
     }
 
