@@ -55,7 +55,7 @@ abstract class RegexBasedAbstract implements DataGenerator
 
     public function addRoute(string $method, string $path, array $data, mixed $callback, RouteObject $object)
     {
-        $this->routeObjects[] = $callback;
+        $this->routeObjects[] = $object;
         if ($this->isStaticRoute($data)) {
             $this->addStaticRoute($method, $path, $data, $callback, $object);
         } else {
