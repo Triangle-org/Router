@@ -11,12 +11,6 @@
   "authors": [
     {
       "role": "Developer",
-      "name": "Nikita Popov",
-      "email": "nikic@php.net",
-      "homepage": "https://github.com/nikic"
-    },
-    {
-      "role": "Developer",
       "name": "Ivan Zorin",
       "email": "creator@localzet.com",
       "homepage": "https://github.com/localzet"
