@@ -45,11 +45,10 @@ class Router
 
     protected static array $fallback = [];
 
-    protected static string $groupPrefix = '';
-
     protected array $routes = [];
 
     protected array $children = [];
+
 
     public static function route(array|string $methods, string $path, mixed $callback): RouteObject
     {
@@ -60,106 +59,68 @@ class Router
 
     public static function group(string $path, callable $callback = null): static
     {
-        $previousGroupPrefix = static::$groupPrefix;
-        static::$groupPrefix = $previousGroupPrefix . $path;
-        $previousInstance = static::$instance;
-        $instance = static::$instance = new static;
+        $prevInstance = static::$instance;
+        $nextInstance = static::$instance = new static;
+
         static::$collector->addGroup($path, $callback);
-        static::$groupPrefix = $previousGroupPrefix;
-        static::$instance = $previousInstance;
-        $previousInstance?->addChild($instance);
-        return $instance;
+
+        $prevInstance?->addChild($nextInstance);
+        static::$instance = $prevInstance;
+
+        return $nextInstance;
     }
 
-    /**
-     * @param Router $route
-     * @return void
-     */
-    public function addChild(Router $route): void
+    public static function child(string $path, callable $callback = null): static
     {
-        $this->children[] = $route;
+        $prevInstance = static::$instance;
+        $nextInstance = static::$instance = new static;
+
+        $callback(static::$collector);
+
+        $prevInstance?->addChild($nextInstance);
+        static::$instance = $prevInstance;
+
+        return $nextInstance;
     }
 
-    /**
-     * Собрать маршрут
-     * @param RouteObject $route Объект маршрута
-     */
-    public function addRoute(RouteObject $route): void
-    {
-        $this->routes[] = $route;
-    }
-
-    /**
-     * Получить все маршруты
-     * @return RouteObject[]
-     */
     public static function getRoutes(): array
     {
         return static::$collector->getRoutes();
     }
 
-    /**
-     * Отключить маршрут по умолчанию
-     * @param string $plugin Имя плагина
-     * @return void
-     */
+
     public static function disableDefaultRoute(string $plugin = ''): void
     {
         static::$disableDefaultRoute[$plugin] = true;
     }
 
-    /**
-     * Проверить, отключен ли маршрут по умолчанию
-     * @param string $plugin Имя плагина
-     * @return bool
-     */
     public static function hasDisableDefaultRoute(string $plugin = ''): bool
     {
         return static::$disableDefaultRoute[$plugin] ?? false;
     }
 
-    /**
-     * Установить маршрут по имени
-     * @param string $name Имя маршрута
-     * @param RouteObject $instance Экземпляр маршрута
-     */
+
     public static function setByName(string $name, RouteObject $instance): void
     {
         static::$nameList[$name] = $instance;
     }
 
-    /**
-     * Получить маршрут по имени
-     * @param string $name Имя маршрута
-     * @return null|RouteObject
-     */
     public static function getByName(string $name): ?RouteObject
     {
         return static::$nameList[$name] ?? null;
     }
 
-    /**
-     * Установить резервный колбэк.
-     *
-     * @param callable|mixed $callback
-     * @param string $plugin
-     * @return void
-     */
+
     public static function fallback(callable $callback, string $plugin = ''): void
     {
         static::$fallback[$plugin] = $callback;
     }
 
-    /**
-     * Получить резервный колбэк.
-     *
-     * @param string $plugin
-     * @return callable|null
-     */
     public static function getFallback(string $plugin = ''): ?callable
     {
         return static::$fallback[$plugin] ?? null;
     }
+
 
     public static function get(string $path, mixed $callback): RouteObject
     {
@@ -264,12 +225,7 @@ class Router
         ) static::delete("/$name/{id}", [$controller, 'destroy'])->name("$prefix$name.destroy");
     }
 
-    /**
-     * Выполнить маршрут
-     * @param string $method HTTP-метод
-     * @param string $path Путь маршрута
-     * @return array
-     */
+
     public static function dispatch(string $method, string $path): array
     {
         return static::$dispatcher->dispatch($method, $path);
@@ -313,10 +269,7 @@ class Router
         );
     }
 
-    /**
-     * @param $middleware
-     * @return $this
-     */
+
     public function middleware($middleware): Router
     {
         foreach ($this->routes as $route) {
@@ -326,5 +279,15 @@ class Router
             $child->middleware($middleware);
         }
         return $this;
+    }
+
+    public function addChild(Router $route): void
+    {
+        $this->children[] = $route;
+    }
+
+    public function addRoute(RouteObject $route): void
+    {
+        $this->routes[] = $route;
     }
 }
