@@ -26,7 +26,7 @@
 
 namespace Triangle\Router;
 
-use Triangle\Engine\Router;
+use Triangle\Router;
 use function array_merge;
 use function count;
 use function preg_replace_callback;
@@ -87,7 +87,7 @@ class RouteObject
     public function name(string $name): RouteObject
     {
         $this->name = $name;
-        RouteCollector::setByName($name, $this);
+        Router::setByName($name, $this);
         return $this;
     }
 
