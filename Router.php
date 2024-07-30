@@ -43,12 +43,12 @@ class Router
 
     protected static array $fallback = [];
 
-    protected static function route(array|string $methods, string $path, mixed $callback): RouteObject
+    public static function route(array|string $methods, string $path, mixed $callback): RouteObject
     {
         return static::$collector->addRoute($methods, $path, $callback);
     }
 
-    protected static function group(string $path, callable $callback = null): void
+    public static function group(string $path, callable $callback = null): void
     {
         static::$collector->addGroup($path, $callback);
     }
