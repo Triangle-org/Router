@@ -233,7 +233,7 @@ class Router
 
     public static function collect(array $paths): void
     {
-        static::$collector = new Router\RouteCollector(
+        static::$collector ??= new Router\RouteCollector(
             new Router\RouteParser\Std(),
             new Router\DataGenerator\GroupCountBased()
         );

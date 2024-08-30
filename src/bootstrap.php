@@ -29,7 +29,7 @@ namespace Triangle\Router;
 require __DIR__ . '/functions.php';
 
 spl_autoload_register(function ($class) {
-    if (strpos($class, 'Triangle\\Router\\') === 0) {
+    if (str_starts_with($class, 'Triangle\\Router\\')) {
         $name = substr($class, strlen('Triangle\\Router'));
         require __DIR__ . strtr($name, '\\', DIRECTORY_SEPARATOR) . '.php';
     }
