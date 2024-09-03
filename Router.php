@@ -89,14 +89,14 @@ class Router
     }
 
 
-    public static function disableDefaultRoute(string $plugin = ''): void
+    public static function disableDefaultRoute(?string $plugin = ''): void
     {
-        static::$disableDefaultRoute[$plugin] = true;
+        static::$disableDefaultRoute[$plugin ?? ''] = true;
     }
 
-    public static function hasDisableDefaultRoute(string $plugin = ''): bool
+    public static function hasDisableDefaultRoute(?string $plugin = ''): bool
     {
-        return static::$disableDefaultRoute[$plugin] ?? false;
+        return static::$disableDefaultRoute[$plugin ?? ''] ?? false;
     }
 
 
@@ -111,14 +111,14 @@ class Router
     }
 
 
-    public static function fallback(callable $callback, string $plugin = ''): void
+    public static function fallback(callable $callback, ?string $plugin = ''): void
     {
-        static::$fallback[$plugin] = $callback;
+        static::$fallback[$plugin ?? ''] = $callback;
     }
 
-    public static function getFallback(string $plugin = ''): ?callable
+    public static function getFallback(?string $plugin = ''): ?callable
     {
-        return static::$fallback[$plugin] ?? null;
+        return static::$fallback[$plugin ?? ''] ?? null;
     }
 
 
