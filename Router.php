@@ -122,8 +122,8 @@ class Router
     {
         $prevInstance = static::$instance;
         $nextInstance = static::$instance = new static(
-            $prevInstance->routeParser,
-            $prevInstance->dataGenerator
+            routeParser: new Router\RouteParser\Std(),
+            dataGenerator: new Router\DataGenerator\GroupCountBased()
         );
 
         static::$instance?->addGroup($path, $callback);
@@ -142,8 +142,8 @@ class Router
     {
         $prevInstance = static::$instance;
         $nextInstance = static::$instance = new static(
-            $prevInstance->routeParser,
-            $prevInstance->dataGenerator
+            routeParser: new Router\RouteParser\Std(),
+            dataGenerator: new Router\DataGenerator\GroupCountBased()
         );
 
         $callback(static::$instance);
