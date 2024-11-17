@@ -128,8 +128,8 @@ class Router
 
         static::$instance?->addGroup($path, $callback);
 
-        $prevInstance?->addChild($nextInstance);
         static::$instance = $prevInstance;
+        $prevInstance?->addChild($nextInstance);
 
         return $nextInstance;
     }
