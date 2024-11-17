@@ -41,13 +41,13 @@ class Router
 
     protected ?Dispatcher $dispatcher = null;
     protected ?RouteParser $routeParser = null;
+    protected array $children = [];
+
     protected string $currentGroupPrefix = '';
     protected static ?Router $instance = null;
 
     protected static array $disableDefaultRoute = [];
-
     protected static array $nameList = [];
-
     protected static array $fallback = [];
 
     /**
@@ -110,14 +110,47 @@ class Router
     {
         $previousGroupPrefix = $this->currentGroupPrefix;
         $this->currentGroupPrefix = $previousGroupPrefix . $path;
+
         $callback($this);
+
         $this->currentGroupPrefix = $previousGroupPrefix;
         return $this;
     }
 
     public static function group(string $path, callable $callback): static
     {
-        return static::$instance?->addGroup($path, $callback);
+        $prevInstance = static::$instance;
+        $nextInstance = static::$instance = new static(
+            $prevInstance::$instance->routeParser,
+            $prevInstance::$instance->dataGenerator
+        );
+
+        static::$instance?->addGroup($path, $callback);
+
+        $prevInstance?->addChild($nextInstance);
+        static::$instance = $prevInstance;
+
+        return $nextInstance;
+    }
+
+    public function addChild(Router $route): void
+    {
+        $this->children[] = $route;
+    }
+    public static function child(string $path, callable $callback = null): static
+    {
+        $prevInstance = static::$instance;
+        $nextInstance = static::$instance = new static(
+            $prevInstance::$instance->routeParser,
+            $prevInstance::$instance->dataGenerator
+        );
+
+        $callback(static::$instance);
+
+        $prevInstance?->addChild($nextInstance);
+        static::$instance = $prevInstance;
+
+        return $nextInstance;
     }
 
     public function getData()
@@ -327,7 +360,9 @@ class Router
         foreach ($this->dataGenerator->getRoutes() as $route) {
             $route->middleware($middleware);
         }
-
+        foreach ($this->children as $child) {
+            $child->middleware($middleware);
+        }
         return $this;
     }
 }
