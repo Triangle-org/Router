@@ -27,7 +27,6 @@
 use Triangle\Router;
 use Triangle\Router\DataGenerator;
 use Triangle\Router\Dispatcher;
-use Triangle\Router\RouteCollector;
 use Triangle\Router\RouteParser;
 
 if (!function_exists('simpleRouteDispatcher')) {
@@ -43,16 +42,14 @@ if (!function_exists('simpleRouteDispatcher')) {
             'routeParser' => RouteParser\Std::class,
             'dataGenerator' => DataGenerator\GroupCountBased::class,
             'dispatcher' => Dispatcher\GroupCountBased::class,
-            'routeCollector' => RouteCollector::class,
         ];
 
-        /** @var RouteCollector $routeCollector */
-        $routeCollector = new $options['routeCollector'](
+        $router = new Router(
             new $options['routeParser'], new $options['dataGenerator']
         );
-        $routeDefinitionCallback($routeCollector);
+        $routeDefinitionCallback($router);
 
-        return new $options['dispatcher']($routeCollector->getData());
+        return new $options['dispatcher']($router->getData());
     }
 }
 
@@ -69,7 +66,6 @@ if (!function_exists('cachedRouteDispatcher')) {
             'routeParser' => 'Triangle\\Router\\RouteParser\\Std',
             'dataGenerator' => 'Triangle\\Router\\DataGenerator\\GroupCountBased',
             'dispatcher' => 'Triangle\\Router\\Dispatcher\\GroupCountBased',
-            'routeCollector' => 'Triangle\\Router\\RouteCollector',
             'cacheDisabled' => false,
         ];
 
@@ -85,13 +81,12 @@ if (!function_exists('cachedRouteDispatcher')) {
             return new $options['dispatcher']($dispatchData);
         }
 
-        $routeCollector = new $options['routeCollector'](
+        $router = new Router(
             new $options['routeParser'], new $options['dataGenerator']
         );
-        $routeDefinitionCallback($routeCollector);
+        $routeDefinitionCallback($router);
 
-        /** @var RouteCollector $routeCollector */
-        $dispatchData = $routeCollector->getData();
+        $dispatchData = $router->getData();
         if (!$options['cacheDisabled']) {
             file_put_contents(
                 $options['cacheFile'],

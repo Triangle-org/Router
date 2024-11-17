@@ -29,14 +29,19 @@ namespace Triangle;
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use Triangle\Router\BadRouteException;
+use Triangle\Router\DataGenerator;
+use Triangle\Router\Dispatcher;
 use Triangle\Router\RouteObject;
+use Triangle\Router\RouteParser;
 
 class Router
 {
-    protected static ?Router\RouteCollector $collector = null;
+    protected ?DataGenerator $dataGenerator = null;
 
-    protected static ?Router\Dispatcher $dispatcher = null;
-
+    protected ?Dispatcher $dispatcher = null;
+    protected ?RouteParser $routeParser = null;
+    protected string $currentGroupPrefix = '';
     protected static ?Router $instance = null;
 
     protected static array $disableDefaultRoute = [];
@@ -45,47 +50,94 @@ class Router
 
     protected static array $fallback = [];
 
-    protected array $routes = [];
-
-    protected array $children = [];
-
-
-    public static function route(array|string $methods, string $path, mixed $callback): RouteObject
+    /**
+     * Constructs a route collector.
+     *
+     * @param RouteParser $routeParser
+     * @param DataGenerator $dataGenerator
+     */
+    public function __construct(RouteParser $routeParser, DataGenerator $dataGenerator)
     {
-        $object = static::$collector->addRoute($methods, $path, $callback);
-        static::$instance?->addRoute($object);
+        $this->routeParser = $routeParser;
+        $this->dataGenerator = $dataGenerator;
+    }
+
+    /**
+     * Adds a route to the collection.
+     *
+     * The syntax used in the $route string depends on the used route parser.
+     *
+     * @param string|string[] $httpMethod
+     * @param string $path
+     * @param callable|mixed $callback
+     * @return RouteObject
+     */
+    public function addRoute(array|string $httpMethod, string $path, mixed $callback): RouteObject
+    {
+        $path = $this->currentGroupPrefix . $path;
+        if (is_string($callback) && strpos($callback, '@')) {
+            $callback = explode('@', $callback, 2);
+        }
+
+        if (!is_array($callback)) {
+            if (!is_callable($callback)) {
+                $callStr = is_scalar($callback) ? $callback : 'Closure';
+                throw new BadRouteException("Router $path $callStr is not callable\n");
+            }
+        } else {
+            $callback = array_values($callback);
+            if (!isset($callback[1]) || !class_exists($callback[0]) || !method_exists($callback[0], $callback[1])) {
+                throw new BadRouteException("Router $path " . json_encode($callback) . " is not callable\n");
+            }
+        }
+
+        $object = new RouteObject($httpMethod, $path, $callback);
+        $routeDatas = $this->routeParser->parse($path);
+        foreach ((array)$httpMethod as $method) {
+            foreach ($routeDatas as $data) {
+                $this->dataGenerator->addRoute($method, $path, $data, $callback, $object);
+            }
+        }
         return $object;
     }
 
-    public static function group(string $path, callable $callback = null): static
+    public static function route(array|string $methods, string $path, mixed $callback): RouteObject
     {
-        $prevInstance = static::$instance;
-        $nextInstance = static::$instance = new static;
-
-        static::$collector->addGroup($path, $callback);
-
-        $prevInstance?->addChild($nextInstance);
-        static::$instance = $prevInstance;
-
-        return $nextInstance;
+        return static::$instance?->addRoute($methods, $path, $callback);
     }
 
-    public static function child(string $path, callable $callback = null): static
+    public function addGroup(string $path, callable $callback): static
     {
-        $prevInstance = static::$instance;
-        $nextInstance = static::$instance = new static;
-
-        $callback(static::$collector);
-
-        $prevInstance?->addChild($nextInstance);
-        static::$instance = $prevInstance;
-
-        return $nextInstance;
+        $previousGroupPrefix = $this->currentGroupPrefix;
+        $this->currentGroupPrefix = $previousGroupPrefix . $path;
+        $callback($this);
+        $this->currentGroupPrefix = $previousGroupPrefix;
+        return $this;
     }
 
-    public static function getRoutes(): array
+    public static function group(string $path, callable $callback): static
     {
-        return static::$collector->getRoutes();
+        return static::$instance?->addGroup($path, $callback);
+    }
+
+    public function getData()
+    {
+        return $this->dataGenerator->getData();
+    }
+
+    public static function data(): array
+    {
+        return static::$instance?->getData();
+    }
+
+    public function getRoutes()
+    {
+        return $this->dataGenerator->getRoutes();
+    }
+
+    public static function routes(): array
+    {
+        return static::$instance?->getRoutes();
     }
 
 
@@ -124,42 +176,42 @@ class Router
 
     public static function get(string $path, mixed $callback): RouteObject
     {
-        return static::$collector->get($path, $callback);
+        return static::$instance->addRoute('GET', $path, $callback);
     }
 
     public static function post(string $path, mixed $callback): RouteObject
     {
-        return static::$collector->post($path, $callback);
+        return static::$instance->addRoute('POST', $path, $callback);
     }
 
     public static function put(string $path, mixed $callback): RouteObject
     {
-        return static::$collector->put($path, $callback);
+        return static::$instance->addRoute('PUT', $path, $callback);
     }
 
     public static function patch(string $path, mixed $callback): RouteObject
     {
-        return static::$collector->patch($path, $callback);
+        return static::$instance->addRoute('PATCH', $path, $callback);
     }
 
     public static function delete(string $path, mixed $callback): RouteObject
     {
-        return static::$collector->delete($path, $callback);
+        return static::$instance->addRoute('DELETE', $path, $callback);
     }
 
     public static function head(string $path, mixed $callback): RouteObject
     {
-        return static::$collector->head($path, $callback);
+        return static::$instance->addRoute('HEAD', $path, $callback);
     }
 
     public static function options(string $path, mixed $callback): RouteObject
     {
-        return static::$collector->options($path, $callback);
+        return static::$instance->addRoute('OPTIONS', $path, $callback);
     }
 
     public static function any(string $path, mixed $callback): RouteObject
     {
-        return static::$collector->any($path, $callback);
+        return static::$instance->addRoute('*', $path, $callback);
     }
 
     public static function resource(string $name, string $controller, array $actions = null, string $prefix = ''): void
@@ -228,14 +280,14 @@ class Router
 
     public static function dispatch(string $method, string $path): array
     {
-        return static::$dispatcher->dispatch($method, $path);
+        return static::$instance->dispatcher->dispatch($method, $path);
     }
 
     public static function collect(array $paths): void
     {
-        static::$collector ??= new Router\RouteCollector(
-            new Router\RouteParser\Std(),
-            new Router\DataGenerator\GroupCountBased()
+        static::$instance ??= new static(
+            routeParser: new Router\RouteParser\Std(),
+            dataGenerator: new Router\DataGenerator\GroupCountBased()
         );
 
         foreach ($paths as $configPath) {
@@ -264,30 +316,18 @@ class Router
             }
         }
 
-        static::$dispatcher = new Router\Dispatcher\GroupCountBased(
-            static::$collector->getData()
+        static::$instance->dispatcher = new Router\Dispatcher\GroupCountBased(
+            static::$instance->dataGenerator->getData()
         );
     }
 
 
     public function middleware($middleware): Router
     {
-        foreach ($this->routes as $route) {
+        foreach ($this->dataGenerator->getRoutes() as $route) {
             $route->middleware($middleware);
         }
-        foreach ($this->children as $child) {
-            $child->middleware($middleware);
-        }
+
         return $this;
-    }
-
-    public function addChild(Router $route): void
-    {
-        $this->children[] = $route;
-    }
-
-    public function addRoute(RouteObject $route): void
-    {
-        $this->routes[] = $route;
     }
 }
