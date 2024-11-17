@@ -42,7 +42,7 @@ class Router
     protected ?Dispatcher $dispatcher = null;
     protected ?RouteParser $routeParser = null;
     protected array $children = [];
-
+    protected array $routes = [];
     protected string $currentGroupPrefix = '';
     protected static ?Router $instance = null;
 
@@ -98,6 +98,7 @@ class Router
                 $this->dataGenerator->addRoute($method, $path, $data, $callback, $object);
             }
         }
+        $this->routes[] = $object;
         return $object;
     }
 
@@ -357,7 +358,7 @@ class Router
 
     public function middleware($middleware): Router
     {
-        foreach ($this->dataGenerator->getRoutes() as $route) {
+        foreach ($this->routes as $route) {
             $route->middleware($middleware);
         }
         foreach ($this->children as $child) {
