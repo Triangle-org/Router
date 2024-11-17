@@ -37,10 +37,10 @@ use Triangle\Router\RouteParser;
 
 class Router
 {
-    protected ?DataGenerator $dataGenerator = null;
+    protected static ?DataGenerator $dataGenerator = null;
 
     protected ?Dispatcher $dispatcher = null;
-    protected ?RouteParser $routeParser = null;
+    protected static ?RouteParser $routeParser = null;
     protected array $children = [];
     protected array $routes = [];
     protected string $currentGroupPrefix = '';
@@ -49,18 +49,6 @@ class Router
     protected static array $disableDefaultRoute = [];
     protected static array $nameList = [];
     protected static array $fallback = [];
-
-    /**
-     * Constructs a route collector.
-     *
-     * @param RouteParser $routeParser
-     * @param DataGenerator $dataGenerator
-     */
-    public function __construct(RouteParser $routeParser, DataGenerator $dataGenerator)
-    {
-        $this->routeParser = $routeParser;
-        $this->dataGenerator = $dataGenerator;
-    }
 
     /**
      * Adds a route to the collection.
@@ -92,10 +80,10 @@ class Router
         }
 
         $object = new RouteObject($httpMethod, $path, $callback);
-        $routeDatas = $this->routeParser->parse($path);
+        $routeDatas = static::routeParser()->parse($path);
         foreach ((array)$httpMethod as $method) {
             foreach ($routeDatas as $data) {
-                $this->dataGenerator->addRoute($method, $path, $data, $callback, $object);
+                static::dataGenerator()->addRoute($method, $path, $data, $callback, $object);
             }
         }
         $this->routes[] = $object;
@@ -104,7 +92,7 @@ class Router
 
     public static function route(array|string $methods, string $path, mixed $callback): RouteObject
     {
-        return static::$instance?->addRoute($methods, $path, $callback);
+        return static::instance()?->addRoute($methods, $path, $callback);
     }
 
     public function addGroup(string $path, callable $callback): static
@@ -121,15 +109,12 @@ class Router
     public static function group(string $path, callable $callback): static
     {
         $prevInstance = static::$instance;
-        $nextInstance = static::$instance = new static(
-            routeParser: new Router\RouteParser\Std(),
-            dataGenerator: new Router\DataGenerator\GroupCountBased()
-        );
+        $nextInstance = static::$instance = new static;
 
-        static::$instance?->addGroup($path, $callback);
+        static::$instance?->addGroup($prevInstance->currentGroupPrefix . $path, $callback);
 
-        static::$instance = $prevInstance;
         $prevInstance?->addChild($nextInstance);
+        static::$instance = $prevInstance;
 
         return $nextInstance;
     }
@@ -141,10 +126,7 @@ class Router
     public static function child(string $path, callable $callback = null): static
     {
         $prevInstance = static::$instance;
-        $nextInstance = static::$instance = new static(
-            routeParser: new Router\RouteParser\Std(),
-            dataGenerator: new Router\DataGenerator\GroupCountBased()
-        );
+        $nextInstance = static::$instance = new static;
 
         $callback(static::$instance);
 
@@ -156,22 +138,22 @@ class Router
 
     public function getData()
     {
-        return $this->dataGenerator->getData();
+        return static::dataGenerator()->getData();
     }
 
     public static function data(): array
     {
-        return static::$instance?->getData();
+        return static::instance()?->getData();
     }
 
     public function getRoutes()
     {
-        return $this->dataGenerator->getRoutes();
+        return static::dataGenerator()->getRoutes();
     }
 
     public static function routes(): array
     {
-        return static::$instance?->getRoutes();
+        return static::instance()?->getRoutes();
     }
 
 
@@ -210,42 +192,42 @@ class Router
 
     public static function get(string $path, mixed $callback): RouteObject
     {
-        return static::$instance->addRoute('GET', $path, $callback);
+        return static::instance()->addRoute('GET', $path, $callback);
     }
 
     public static function post(string $path, mixed $callback): RouteObject
     {
-        return static::$instance->addRoute('POST', $path, $callback);
+        return static::instance()->addRoute('POST', $path, $callback);
     }
 
     public static function put(string $path, mixed $callback): RouteObject
     {
-        return static::$instance->addRoute('PUT', $path, $callback);
+        return static::instance()->addRoute('PUT', $path, $callback);
     }
 
     public static function patch(string $path, mixed $callback): RouteObject
     {
-        return static::$instance->addRoute('PATCH', $path, $callback);
+        return static::instance()->addRoute('PATCH', $path, $callback);
     }
 
     public static function delete(string $path, mixed $callback): RouteObject
     {
-        return static::$instance->addRoute('DELETE', $path, $callback);
+        return static::instance()->addRoute('DELETE', $path, $callback);
     }
 
     public static function head(string $path, mixed $callback): RouteObject
     {
-        return static::$instance->addRoute('HEAD', $path, $callback);
+        return static::instance()->addRoute('HEAD', $path, $callback);
     }
 
     public static function options(string $path, mixed $callback): RouteObject
     {
-        return static::$instance->addRoute('OPTIONS', $path, $callback);
+        return static::instance()->addRoute('OPTIONS', $path, $callback);
     }
 
     public static function any(string $path, mixed $callback): RouteObject
     {
-        return static::$instance->addRoute('*', $path, $callback);
+        return static::instance()->addRoute('*', $path, $callback);
     }
 
     public static function resource(string $name, string $controller, array $actions = null, string $prefix = ''): void
@@ -314,15 +296,24 @@ class Router
 
     public static function dispatch(string $method, string $path): array
     {
-        return static::$instance->dispatcher->dispatch($method, $path);
+        return static::instance()->dispatcher->dispatch($method, $path);
+    }
+
+    public static function routeParser() {
+        return static::$routeParser ??= new Router\RouteParser\Std();
+    }
+
+    public static function dataGenerator() {
+        return static::$dataGenerator ??= new Router\DataGenerator\GroupCountBased();
+    }
+
+    public static function instance()
+    {
+        return static::$instance ??= new static;
     }
 
     public static function collect(array $paths): void
     {
-        static::$instance ??= new static(
-            routeParser: new Router\RouteParser\Std(),
-            dataGenerator: new Router\DataGenerator\GroupCountBased()
-        );
 
         foreach ($paths as $configPath) {
             $routeConfigFile = $configPath . '/route.php';
@@ -350,8 +341,8 @@ class Router
             }
         }
 
-        static::$instance->dispatcher = new Router\Dispatcher\GroupCountBased(
-            static::$instance->dataGenerator->getData()
+        static::instance()->dispatcher = new Router\Dispatcher\GroupCountBased(
+            static::dataGenerator()->getData()
         );
     }
 
