@@ -29,6 +29,7 @@ namespace Triangle;
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use Triangle\Http\App;
 use Triangle\Router\BadRouteException;
 use Triangle\Router\DataGenerator;
 use Triangle\Router\Dispatcher;
@@ -49,6 +50,11 @@ class Router
     protected static array $disableDefaultRoute = [];
     protected static array $nameList = [];
     protected static array $fallback = [];
+
+    protected static array $fallbackRoutes = [];
+    protected static array $disabledDefaultRoutes = [];
+    protected static array $disabledDefaultRouteControllers = [];
+    protected static array $disabledDefaultRouteActions = [];
 
     /**
      * Adds a route to the collection.
@@ -123,6 +129,7 @@ class Router
     {
         $this->children[] = $route;
     }
+
     public static function child(string $path, callable $callback = null): static
     {
         $prevInstance = static::$instance;
@@ -157,14 +164,57 @@ class Router
     }
 
 
-    public static function disableDefaultRoute(?string $plugin = ''): void
+    public static function disableDefaultRoute(?string $plugin = '', string $app = null): bool
     {
-        static::$disableDefaultRoute[$plugin ?? ''] = true;
+        // Is [controller action]
+        if (is_array($plugin)) {
+            $controllerAction = $plugin;
+            if (!isset($controllerAction[0]) || !is_string($controllerAction[0]) ||
+                !isset($controllerAction[1]) || !is_string($controllerAction[1])) {
+                return false;
+            }
+            $controller = $controllerAction[0];
+            $action = $controllerAction[1];
+            static::$disabledDefaultRouteActions[$controller][$action] = $action;
+            return true;
+        }
+        // Is plugin
+        if (is_string($plugin) && (preg_match('/^[a-zA-Z0-9_]+$/', $plugin) || $plugin === '')) {
+            if (!isset(static::$disabledDefaultRoutes[$plugin])) {
+                static::$disabledDefaultRoutes[$plugin] = [];
+            }
+            $app = $app ?? '*';
+            static::$disabledDefaultRoutes[$plugin][$app] = $app;
+            return true;
+        }
+        // Is controller
+        if (is_string($plugin) && class_exists($plugin)) {
+            static::$disabledDefaultRouteControllers[$plugin] = $plugin;
+            return true;
+        }
+        return false;
     }
 
-    public static function hasDisableDefaultRoute(?string $plugin = ''): bool
+    public static function isDefaultRouteDisabled($plugin = '', string $app = null): bool
     {
-        return static::$disableDefaultRoute[$plugin ?? ''] ?? false;
+        // Is [controller action]
+        if (is_array($plugin)) {
+            if (!isset($plugin[0]) || !is_string($plugin[0]) ||
+                !isset($plugin[1]) || !is_string($plugin[1])) {
+                return false;
+            }
+            return isset(static::$disabledDefaultRouteActions[$plugin[0]][$plugin[1]]);
+        }
+        // Is plugin
+        if (is_string($plugin) && (preg_match('/^[a-zA-Z0-9_]+$/', $plugin) || $plugin === '')) {
+            $app = $app ?? '*';
+            return isset(static::$disabledDefaultRoutes[$plugin]['*']) || isset(static::$disabledDefaultRoutes[$plugin][$app]);
+        }
+        // Is controller
+        if (is_string($plugin) && class_exists($plugin)) {
+            return isset(static::$disabledDefaultRouteControllers[$plugin]);
+        }
+        return false;
     }
 
 
@@ -179,14 +229,20 @@ class Router
     }
 
 
-    public static function fallback(callable $callback, ?string $plugin = ''): void
+    public static function fallback(callable $callback, ?string $plugin = ''): RouteObject
     {
-        static::$fallback[$plugin ?? ''] = $callback;
+        $route = new RouteObject([], '', $callback);
+        static::$fallbackRoutes[$plugin ?? ''] = $route;
+        return $route;
     }
 
-    public static function getFallback(?string $plugin = ''): ?callable
+    public static function getFallback(?string $plugin = '', int $status = 404): ?callable
     {
-        return static::$fallback[$plugin ?? ''] ?? null;
+        if (!isset(static::$fallback[$plugin])) {
+            $route = static::$fallbackRoutes[$plugin] ?? null;
+            static::$fallback[$plugin] = $route ? App::getCallback($plugin, 'NOT_FOUND', $route->getCallback(), ['status' => $status], false, $route) : null;
+        }
+        return static::$fallback[$plugin];
     }
 
 
@@ -299,11 +355,13 @@ class Router
         return static::instance()->dispatcher->dispatch($method, $path);
     }
 
-    public static function routeParser() {
+    public static function routeParser()
+    {
         return static::$routeParser ??= new Router\RouteParser\Std();
     }
 
-    public static function dataGenerator() {
+    public static function dataGenerator()
+    {
         return static::$dataGenerator ??= new Router\DataGenerator\GroupCountBased();
     }
 
