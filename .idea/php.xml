@@ -23,8 +23,8 @@
       <path value="$PROJECT_DIR$/vendor/vlucas/phpdotenv" />
       <path value="$PROJECT_DIR$/vendor/monolog/monolog" />
       <path value="$PROJECT_DIR$/vendor/composer" />
-      <path value="$PROJECT_DIR$/vendor/localzet/server" />
       <path value="$PROJECT_DIR$/vendor/localzet/events" />
+      <path value="$PROJECT_DIR$/vendor/localzet/server" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="8.0" />
