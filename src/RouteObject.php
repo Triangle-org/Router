@@ -43,7 +43,7 @@ class RouteObject
     protected ?string $name = null;
 
     /** @var array $methods HTTP-методы маршрута */
-    public string $methods;
+    public array $methods;
 
     /** @var string $path Путь маршрута */
     public string $path = '';
@@ -65,7 +65,7 @@ class RouteObject
      */
     public function __construct(string|array $methods, string $path, mixed $callback)
     {
-        $this->methods = $methods;
+        $this->methods = (array)$methods;
         $this->path = $path;
         $this->callback = $callback;
     }
