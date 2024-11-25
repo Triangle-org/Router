@@ -117,7 +117,7 @@ class Router
         $prevInstance = static::$instance;
         $nextInstance = static::$instance = new static;
 
-        static::$instance?->addGroup($prevInstance->currentGroupPrefix . $path, $callback);
+        static::$instance?->addGroup(($prevInstance?->currentGroupPrefix ?? '') . $path, $callback);
 
         $prevInstance?->addChild($nextInstance);
         static::$instance = $prevInstance;
