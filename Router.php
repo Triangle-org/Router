@@ -241,7 +241,7 @@ class Router
         if (!isset(static::$fallback[$plugin])) {
             $route = static::$fallbackRoutes[$plugin] ?? null;
             $middlewares = [];
-            foreach ($route?->getMiddleware() as $className) {
+            foreach ($route?->getMiddleware() ?? [] as $className) {
                 $middlewares[] = [$className, 'process'];
             }
             static::$fallback[$plugin] = $route ? App::getCallback($plugin, 'NOT_FOUND', $route->getCallback(), ['status' => $status], false, $middlewares) : null;
