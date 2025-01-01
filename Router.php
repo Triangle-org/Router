@@ -5,7 +5,7 @@
  * @link        https://github.com/Triangle-org/Router
  *
  * @author      Ivan Zorin <creator@localzet.com>
- * @copyright   Copyright (c) 2023-2024 Triangle Framework Team
+ * @copyright   Copyright (c) 2023-2025 Triangle Framework Team
  * @license     https://www.gnu.org/licenses/agpl-3.0 GNU Affero General Public License v3.0
  *
  *              This program is free software: you can redistribute it and/or modify
@@ -29,6 +29,9 @@ namespace Triangle;
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use ReflectionAttribute;
+use ReflectionClass;
+use Triangle\Annotation\DisableDefaultRoute;
 use Triangle\Http\App;
 use Triangle\Router\BadRouteException;
 use Triangle\Router\DataGenerator;
@@ -203,7 +206,7 @@ class Router
                 !isset($plugin[1]) || !is_string($plugin[1])) {
                 return false;
             }
-            return isset(static::$disabledDefaultRouteActions[$plugin[0]][$plugin[1]]);
+            return isset(static::$disabledDefaultRouteActions[$plugin[0]][$plugin[1]]) || static::isDefaultRouteDisabledByAnnotation($plugin[0], $plugin[1]);
         }
         // Is plugin
         if (is_string($plugin) && (preg_match('/^[a-zA-Z0-9_]+$/', $plugin) || $plugin === '')) {
@@ -217,6 +220,27 @@ class Router
         return false;
     }
 
+    /**
+     * @param string $controller
+     * @param string|null $action
+     * @return bool
+     */
+    protected static function isDefaultRouteDisabledByAnnotation(string $controller, ?string $action = null): bool
+    {
+        if (class_exists($controller)) {
+            $reflectionClass = new ReflectionClass($controller);
+            if ($reflectionClass->getAttributes(DisableDefaultRoute::class, ReflectionAttribute::IS_INSTANCEOF)) {
+                return true;
+            }
+            if ($action && $reflectionClass->hasMethod($action)) {
+                $reflectionMethod = $reflectionClass->getMethod($action);
+                if ($reflectionMethod->getAttributes(DisableDefaultRoute::class, ReflectionAttribute::IS_INSTANCEOF)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     public static function setByName(string $name, RouteObject $instance): void
     {
