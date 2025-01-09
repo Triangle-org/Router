@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php
 
 /**
  * @package     Triangle Router Component
@@ -12,25 +12,39 @@
  *              it under the terms of the GNU Affero General Public License as published
  *              by the Free Software Foundation, either version 3 of the License, or
  *              (at your option) any later version.
- *              
+ *
  *              This program is distributed in the hope that it will be useful,
  *              but WITHOUT ANY WARRANTY; without even the implied warranty of
  *              MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *              GNU Affero General Public License for more details.
- *              
+ *
  *              You should have received a copy of the GNU Affero General Public License
  *              along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *              
+ *
  *              For any questions, please contact <triangle@localzet.com>
  */
 
 namespace Triangle\Router;
 
-require __DIR__ . '/functions.php';
+use localzet\Server;
+use Triangle\Engine\BootstrapInterface;
+use Triangle\Router;
 
-spl_autoload_register(function ($class) {
-    if (str_starts_with($class, 'Triangle\\Router\\')) {
-        $name = substr($class, strlen('Triangle\\Router'));
-        require __DIR__ . strtr($name, '\\', DIRECTORY_SEPARATOR) . '.php';
+class Bootstrap implements BootstrapInterface
+{
+
+    public static function start(?Server $server): void
+    {
+        if ($server instanceof Server && class_exists(Router::class)) {
+            $paths = [config_path()];
+            foreach (scan_dir(plugin_path(), false) as $name) {
+                $dir = plugin_path("$name/config");
+                if (is_dir($dir)) {
+                    $paths[] = $dir;
+                }
+            }
+
+            Router::collect($paths);
+        }
     }
-});
+}
