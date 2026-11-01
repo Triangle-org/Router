@@ -11,22 +11,20 @@ class RouteTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Router::clear();
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
-        Router::clear();
     }
 
     public function testRouteRegistration(): void
     {
-        Router::get('/test', function () {
+        Router::get('/tests/route-registration', function () {
             return 'test';
         });
 
-        $routeInfo = Router::dispatch('GET', '/test');
+        $routeInfo = Router::dispatch('GET', '/tests/route-registration');
         
         $this->assertEquals(Dispatcher::FOUND, $routeInfo[0]);
         $this->assertIsCallable($routeInfo[1]);
@@ -34,11 +32,11 @@ class RouteTest extends TestCase
 
     public function testRouteWithParameters(): void
     {
-        Router::get('/user/{id}', function ($id) {
+        Router::get('/tests/users/{id}', function ($id) {
             return $id;
         });
 
-        $routeInfo = Router::dispatch('GET', '/user/123');
+        $routeInfo = Router::dispatch('GET', '/tests/users/123');
         
         $this->assertEquals(Dispatcher::FOUND, $routeInfo[0]);
         $this->assertEquals(['123'], $routeInfo[2]);
@@ -46,18 +44,18 @@ class RouteTest extends TestCase
 
     public function testRouteNotFound(): void
     {
-        $routeInfo = Router::dispatch('GET', '/non-existent');
+        $routeInfo = Router::dispatch('GET', '/tests/not-found');
         
         $this->assertEquals(Dispatcher::NOT_FOUND, $routeInfo[0]);
     }
 
     public function testMethodNotAllowed(): void
     {
-        Router::get('/test', function () {
+        Router::get('/tests/method-not-allowed', function () {
             return 'test';
         });
 
-        $routeInfo = Router::dispatch('POST', '/test');
+        $routeInfo = Router::dispatch('POST', '/tests/method-not-allowed');
         
         $this->assertEquals(Dispatcher::METHOD_NOT_ALLOWED, $routeInfo[0]);
     }
