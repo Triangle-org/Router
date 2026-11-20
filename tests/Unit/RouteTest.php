@@ -36,6 +36,13 @@ class RouteTest extends TestCase
         return Router::dispatch($method, $path);
     }
 
+    public function testChildCallbackCanBeOmitted(): void
+    {
+        $child = Router::child('/optional');
+
+        $this->assertInstanceOf(Router::class, $child);
+    }
+
     public function testRouteRegistration(): void
     {
         Router::get('/tests/route-registration', function () {
