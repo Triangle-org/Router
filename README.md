@@ -35,7 +35,7 @@
 composer require triangle/router
 ```
 
-Требуется PHP 8.0 или выше.
+Требуется PHP 8.1 или выше (ограничение `^8.1` в Composer).
 
 Usage
 -----
@@ -47,7 +47,7 @@ Usage
 
 require '/path/to/vendor/autoload.php';
 
-$dispatcher = simpleRouteDispatcher(function(Triangle\Router\RouteCollector $r) {
+$dispatcher = simpleRouteDispatcher(function(Triangle\Router $r) {
     $r->addRoute('GET', '/users', 'get_all_users_handler');
     // {id} должен быть числом (\d+)
     $r->addRoute('GET', '/user/{id:\d+}', 'get_user_handler');
@@ -85,7 +85,7 @@ switch ($routeInfo[0]) {
 ### Определение маршрутов
 
 Маршруты определяются путем вызова функции `simpleRouteDispatcher()`, которая принимает
-вызываемый объект, принимающий экземпляр `Triangle\Router\RouteCollector`. Маршруты добавляются путем вызова
+вызываемый объект, принимающий экземпляр `Triangle\Router`. Маршруты добавляются путем вызова
 `addRoute()` на экземпляре коллектора:
 
 ```php
@@ -172,7 +172,7 @@ $r->any('/any-route', 'any_handler');
 Например, определение ваших маршрутов как:
 
 ```php
-$r->addGroup('/admin', function (RouteCollector $r) {
+$r->addGroup('/admin', function (\Triangle\Router $r) {
     $r->addRoute('GET', '/do-something', 'handler');
     $r->addRoute('GET', '/do-another-thing', 'handler');
     $r->addRoute('GET', '/do-something-else', 'handler');
@@ -198,7 +198,7 @@ $r->addRoute('GET', '/admin/do-something-else', 'handler');
 ```php
 <?php
 
-$dispatcher = cachedRouteDispatcher(function(Triangle\Router\RouteCollector $r) {
+$dispatcher = cachedRouteDispatcher(function(Triangle\Router $r) {
     $r->addRoute('GET', '/user/{name}/{id:[0-9]+}', 'handler0');
     $r->addRoute('GET', '/user/{id:[0-9]+}', 'handler1');
     $r->addRoute('GET', '/user/{name}', 'handler2');
@@ -296,7 +296,7 @@ interface Dispatcher {
 ```php
 <?php
 
-$dispatcher = simpleRouteDispatcher(function(Triangle\Router\RouteCollector $r) {
+$dispatcher = simpleRouteDispatcher(function(Triangle\Router $r) {
     /* ... */
 }, [
     'routeParser' => 'Triangle\\Router\\RouteParser\\Std',
@@ -324,6 +324,25 @@ $dispatcher = simpleRouteDispatcher(function(Triangle\Router\RouteCollector $r) 
 
 Наконец, обратите внимание, что приложения МОГУТ всегда указывать свой собственный маршрут метода HEAD для данного ресурса,
 чтобы полностью обойти это поведение.
+
+
+## Версия и совместимость
+
+Текущий исходный код требует PHP 8.1+ и объявляет совместимость с `triangle/engine` `^8.1 || ^9.0`. Ветка Engine 9 пока не имеет стабильного релизного тега: наличие ограничения в исходной ветке не означает, что опубликованный пакет Composer уже выпущен и проверен с Engine 9. Проверяйте фактически установленную версию через `composer show triangle/router triangle/engine`.
+
+Пакет подключает глобальные функции `simpleRouteDispatcher()`, `cachedRouteDispatcher()` и `route()` через Composer autoload. Маршрутизатор возвращает кортеж статуса, обработчика и параметров; формирование HTTP-ответа и заголовка `Allow` для 405 остаётся задачей приложения. При использовании GET-маршрута для HEAD приложение вне PHP SAPI должно само подавить тело ответа.
+
+## Проверки
+
+Запуск тестов из корня репозитория:
+
+```sh
+composer test --no-interaction
+```
+
+Команда запускает PHPUnit с конфигурацией `tests/phpunit.xml`. Набор `tests/Unit/RouteTest.php` содержит четыре теста; фактическое число assertions зависит от результата PHPUnit. Это небольшой unit-набор, а не подтверждение полного поведения в production или совместимости со всеми версиями Engine.
+
+Документация: [English](README.en.md).
 
 ### Авторы
 
