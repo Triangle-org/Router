@@ -17,7 +17,7 @@ Triangle Router matches HTTP methods and URI paths against route patterns and re
 - PHP 8.1 or later (`^8.1` in Composer).
 - `triangle/engine` `^8.1 || ^9.0` in the current source branch.
 
-Engine 9 does not yet have a stable release tag. The source constraint is not proof that a stable published Composer release is available or verified against Engine 9. Check the resolved packages with `composer show triangle/router triangle/engine`.
+Triangle Engine 9.0.0 is available as a stable release. Router 2.0.6 supports Engine `^8.1 || ^9.0`; check the versions resolved by your application with `composer show triangle/router triangle/engine`.
 
 ## Installation
 
