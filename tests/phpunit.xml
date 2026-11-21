@@ -6,7 +6,8 @@
          cacheDirectory=".phpunit.cache"
          executionOrder="depends,defects"
          failOnRisky="true"
-         failOnWarning="true">
+         failOnWarning="true"
+         failOnDeprecation="true">
     <testsuites>
         <testsuite name="Unit">
             <directory>Unit</directory>

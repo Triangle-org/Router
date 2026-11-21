@@ -147,7 +147,7 @@ class RouteObject
      * @param mixed $default Значение по умолчанию
      * @return array|mixed|null
      */
-    public function param(string $name = null, mixed $default = null): mixed
+    public function param(?string $name = null, mixed $default = null): mixed
     {
         if ($name === null) {
             return $this->params;

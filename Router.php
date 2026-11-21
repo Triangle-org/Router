@@ -133,12 +133,14 @@ class Router
         $this->children[] = $route;
     }
 
-    public static function child(string $path, callable $callback = null): static
+    public static function child(string $path, ?callable $callback = null): static
     {
         $prevInstance = static::$instance;
         $nextInstance = static::$instance = new static;
 
-        $callback(static::$instance);
+        if ($callback !== null) {
+            $callback(static::$instance);
+        }
 
         $prevInstance?->addChild($nextInstance);
         static::$instance = $prevInstance;
@@ -167,7 +169,7 @@ class Router
     }
 
 
-    public static function disableDefaultRoute(?string $plugin = '', string $app = null): bool
+    public static function disableDefaultRoute(?string $plugin = '', ?string $app = null): bool
     {
         // Is [controller action]
         if (is_array($plugin)) {
@@ -198,7 +200,7 @@ class Router
         return false;
     }
 
-    public static function isDefaultRouteDisabled($plugin = '', string $app = null): bool
+    public static function isDefaultRouteDisabled($plugin = '', ?string $app = null): bool
     {
         // Is [controller action]
         if (is_array($plugin)) {
@@ -310,7 +312,7 @@ class Router
         return static::instance()->addRoute('*', $path, $callback);
     }
 
-    public static function resource(string $name, string $controller, array $actions = null, string $prefix = ''): void
+    public static function resource(string $name, string $controller, ?array $actions = null, string $prefix = ''): void
     {
         $name = trim($name, '/');
         $selected = !empty($actions);
